@@ -1,3 +1,5 @@
+# Streamlit secrets - NEVER COMMIT
+   .streamlit/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
