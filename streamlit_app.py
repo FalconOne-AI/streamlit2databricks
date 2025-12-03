@@ -96,9 +96,17 @@ def fetch_all_data():
         columns = [desc[0] for desc in cursor.description]
         data = cursor.fetchall()
         
+        df = pd.DataFrame(data, columns=columns)
+        
+        # Convert data types for Plotly compatibility
+        if not df.empty:
+            df['revenue'] = pd.to_numeric(df['revenue'], errors='coerce')
+            df['expenses'] = pd.to_numeric(df['expenses'], errors='coerce')
+            df['profit_margin'] = pd.to_numeric(df['profit_margin'], errors='coerce')
+        
         cursor.close()
         
-        return pd.DataFrame(data, columns=columns)
+        return df
         
     except Exception as e:
         st.error(f"Fetch failed: {e}")
@@ -129,9 +137,18 @@ def get_summary_stats():
         columns = [desc[0] for desc in cursor.description]
         data = cursor.fetchall()
         
+        df = pd.DataFrame(data, columns=columns)
+        
+        # Convert data types for Plotly compatibility
+        if not df.empty:
+            df['submission_count'] = pd.to_numeric(df['submission_count'], errors='coerce')
+            df['total_revenue'] = pd.to_numeric(df['total_revenue'], errors='coerce')
+            df['total_expenses'] = pd.to_numeric(df['total_expenses'], errors='coerce')
+            df['avg_profit_margin'] = pd.to_numeric(df['avg_profit_margin'], errors='coerce')
+        
         cursor.close()
         
-        return pd.DataFrame(data, columns=columns)
+        return df
         
     except Exception as e:
         st.error(f"Summary fetch failed: {e}")
