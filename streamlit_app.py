@@ -105,13 +105,12 @@ def fetch_all_data(_timezone='America/New_York'):
             df['expenses'] = pd.to_numeric(df['expenses'], errors='coerce')
             df['profit_margin'] = pd.to_numeric(df['profit_margin'], errors='coerce')
             
-        # Convert timestamps to user's selected timezone
-        if 'submission_date' in df.columns:
-            df['submission_date'] = pd.to_datetime(df['submission_date'], utc=True).dt.tz_convert(_timezone)
-
-        if 'created_at' in df.columns:
-            df['created_at'] = pd.to_datetime(df['created_at'], utc=True).dt.tz_convert(_timezone)
-
+            # Convert timestamps to user's selected timezone
+            if 'submission_date' in df.columns:
+                df['submission_date'] = pd.to_datetime(df['submission_date']).dt.tz_localize('UTC').dt.tz_convert(_timezone)
+            if 'created_at' in df.columns:
+                df['created_at'] = pd.to_datetime(df['created_at']).dt.tz_localize('UTC').dt.tz_convert(_timezone)
+        
         cursor.close()
         
         return df
@@ -303,14 +302,18 @@ def show_visualizations(df, summary_df):
         
         with col2:
             # Expenses vs Revenue Scatter
+            # Use absolute value for size to handle negative profit margins
+            df_viz = df.copy()
+            df_viz['abs_profit_margin'] = df_viz['profit_margin'].abs()
+            
             fig2 = px.scatter(
-                df,
+                df_viz,
                 x='revenue',
                 y='expenses',
                 color='business_unit',
                 title='Expenses vs Revenue',
                 labels={'revenue': 'Revenue ($)', 'expenses': 'Expenses ($)'},
-                size='profit_margin',
+                size='abs_profit_margin',
                 hover_data=['business_unit', 'profit_margin']
             )
             st.plotly_chart(fig2, use_container_width=True)
