@@ -80,7 +80,7 @@ def submit_financial_data(business_unit, revenue, expenses, submitted_by):
         return False, str(e)
 
 @st.cache_data(ttl=30)
-def fetch_all_data():
+def fetch_all_data(_timezone='America/New_York'):
     """Fetch all financial data"""
     connection = get_databricks_connection()
     if not connection:
@@ -104,6 +104,12 @@ def fetch_all_data():
             df['revenue'] = pd.to_numeric(df['revenue'], errors='coerce')
             df['expenses'] = pd.to_numeric(df['expenses'], errors='coerce')
             df['profit_margin'] = pd.to_numeric(df['profit_margin'], errors='coerce')
+            
+            # Convert timestamps to user's selected timezone
+            if 'submission_date' in df.columns:
+                df['submission_date'] = pd.to_datetime(df['submission_date']).dt.tz_localize('UTC').dt.tz_convert(_timezone)
+            if 'created_at' in df.columns:
+                df['created_at'] = pd.to_datetime(df['created_at']).dt.tz_localize('UTC').dt.tz_convert(_timezone)
         
         cursor.close()
         
@@ -383,6 +389,12 @@ def show_recent_submissions(df):
         lambda x: f"{float(x):.2f}%" if pd.notna(x) else "0.00%"
     )
     
+    # Format submission date to be more readable
+    if 'submission_date' in display_df.columns:
+        display_df['submission_date'] = display_df['submission_date'].apply(
+            lambda x: x.strftime('%Y-%m-%d %I:%M %p %Z') if pd.notna(x) else ''
+        )
+    
     st.dataframe(
         display_df[['business_unit', 'revenue', 'expenses', 'profit_margin', 'submitted_by', 'submission_date']],
         use_container_width=True,
@@ -405,8 +417,23 @@ def main():
         
         st.markdown("---")
         
+        # Timezone selector
+        timezone = st.selectbox(
+            "Display Timezone",
+            ["America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", 
+             "Europe/London", "Europe/Paris", "Asia/Tokyo", "UTC"],
+            index=0,
+            help="Select your timezone for date/time display"
+        )
+        
+        # Store timezone in session state
+        st.session_state['timezone'] = timezone
+        
+        st.markdown("---")
+        
         if st.button("🔄 Refresh Data", use_container_width=True):
-            st.cache_data.clear()
+            fetch_all_data.clear()
+            get_summary_stats.clear()
             st.rerun()
         
         st.markdown("---")
@@ -421,8 +448,9 @@ def main():
     st.markdown("---")
     
     # Fetch data
+    timezone = st.session_state.get('timezone', 'America/New_York')
     with st.spinner("Loading data..."):
-        df = fetch_all_data()
+        df = fetch_all_data(timezone)
         summary_df = get_summary_stats()
     
     # Display metrics and visualizations
@@ -436,4 +464,3 @@ def main():
         st.info("👋 Welcome! Submit your first financial data entry above to get started.")
 
 if __name__ == "__main__":
-    main()
