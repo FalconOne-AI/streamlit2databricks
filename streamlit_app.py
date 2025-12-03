@@ -8,6 +8,7 @@ import uuid
 from datetime import datetime
 import plotly.express as px
 import plotly.graph_objects as go
+import time
 
 # ============================================================================
 # PAGE CONFIG
@@ -214,8 +215,12 @@ def show_data_entry_form():
                 if success:
                     st.success(f"✅ Data submitted successfully! ID: {result}")
                     st.balloons()
-                    # Clear cache to show updated data
-                    st.cache_data.clear()
+                    # Clear cache to force fresh data fetch
+                    fetch_all_data.clear()
+                    get_summary_stats.clear()
+                    # Small delay to ensure Databricks commits the data
+                    import time
+                    time.sleep(1)
                     st.rerun()
                 else:
                     st.error(f"❌ Submission failed: {result}")
@@ -366,9 +371,17 @@ def show_recent_submissions(df):
     
     # Format dataframe for display
     display_df = df.head(10).copy()
-    display_df['revenue'] = display_df['revenue'].apply(lambda x: f"${x:,.2f}")
-    display_df['expenses'] = display_df['expenses'].apply(lambda x: f"${x:,.2f}")
-    display_df['profit_margin'] = display_df['profit_margin'].apply(lambda x: f"{x:.2f}%")
+    
+    # Safely format numeric columns
+    display_df['revenue'] = display_df['revenue'].apply(
+        lambda x: f"${float(x):,.2f}" if pd.notna(x) else "$0.00"
+    )
+    display_df['expenses'] = display_df['expenses'].apply(
+        lambda x: f"${float(x):,.2f}" if pd.notna(x) else "$0.00"
+    )
+    display_df['profit_margin'] = display_df['profit_margin'].apply(
+        lambda x: f"{float(x):.2f}%" if pd.notna(x) else "0.00%"
+    )
     
     st.dataframe(
         display_df[['business_unit', 'revenue', 'expenses', 'profit_margin', 'submitted_by', 'submission_date']],
