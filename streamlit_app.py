@@ -463,5 +463,5 @@ def main():
     else:
         st.info("👋 Welcome! Submit your first financial data entry above to get started.")
 
-    if __name__ == "__main__":
-        main()
+if __name__ == "__main__":
+    main()
