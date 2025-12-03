@@ -105,12 +105,13 @@ def fetch_all_data(_timezone='America/New_York'):
             df['expenses'] = pd.to_numeric(df['expenses'], errors='coerce')
             df['profit_margin'] = pd.to_numeric(df['profit_margin'], errors='coerce')
             
-            # Convert timestamps to user's selected timezone
-            if 'submission_date' in df.columns:
-                df['submission_date'] = pd.to_datetime(df['submission_date']).dt.tz_localize('UTC').dt.tz_convert(_timezone)
-            if 'created_at' in df.columns:
-                df['created_at'] = pd.to_datetime(df['created_at']).dt.tz_localize('UTC').dt.tz_convert(_timezone)
-        
+        # Convert timestamps to user's selected timezone
+        if 'submission_date' in df.columns:
+            df['submission_date'] = pd.to_datetime(df['submission_date'], utc=True).dt.tz_convert(_timezone)
+
+        if 'created_at' in df.columns:
+            df['created_at'] = pd.to_datetime(df['created_at'], utc=True).dt.tz_convert(_timezone)
+
         cursor.close()
         
         return df
